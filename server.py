@@ -6,7 +6,7 @@ def recv(conn):
     return encrypt.decrypt(message, KEY, False, '')
 
 
-def send(conn, msg):
+def send(conn, msg): #TODO: Maybe '+R4' in just specific cases
     message = encrypt.encrypt(msg + '+R4', KEY, False, '')
     conn.send(message.encode(ENCODING))
 
@@ -47,7 +47,7 @@ def write_to_file(msg, file):
     fout.close()
 
 
-def get_file(conn, file_name, current_path):
+def get_file(conn, file_name, current_path): #TODO: Multiple Files
     if isinstance(file_name, str):
         data = sf.send_file(current_path + '/' +  file_name, BUFFER_SIZE)
 
@@ -61,10 +61,37 @@ def get_file(conn, file_name, current_path):
 
             for chunk in data:
                 send(conn, chunk)
+            
+            #send(conn, "DONE")
         
             log(f"> {USER[len(USER)-1]} Downloaded A File Saved As {file}")
     
     send(conn, "DONE!")
+
+def send_file(file_name, current_path, save): #TODO: Multiple Files
+    print(isinstance(file_name, str))
+    if isinstance(file_name, str):
+        print(0)
+        raw_file = ""
+        data = recv(conn)
+        print(1)
+        
+        try:
+            while data != "DONE!":
+                print("!!!SEX: " + data)
+                raw_file += data
+                
+                data = recv(conn)
+
+                if "DONE!" in data:
+                    break
+        except:
+            print("eroare")
+
+        if save:
+            fout = open(current_path + '/' + file_name, 'w')
+            fout.write(raw_file)
+            fout.close()
 
 def process_commands(conn, command):
     try:
@@ -87,6 +114,21 @@ def process_commands(conn, command):
                
             get_file(conn, file_name, current_path)
 
+        elif command[1] == 'send_file':
+            log("SA MOARA MA SA")
+            save = False
+            file_name = command[2:len(command)]
+            print("PULA n PIZDA")
+            if file_name[len(file_name) - 1] == '-s':
+                file_name = file_name.pop()
+                save = True
+
+            print("SEX")
+            if len(command) > 3:
+                pass
+            print("SALUT COAIE")
+            send_file(file_name, current_path, save)
+
         elif command[1] == 'mkdir':
             temp_path = current_path + command[2]
             os.mkdir(temp_path)
@@ -101,7 +143,7 @@ def process_commands(conn, command):
             send(conn, f"Successfully Removed +R2{command[2]}-w")
 
         elif command[1] == 'rmfile':
-            temp_path = curre
+            #temp_path = curre
             os.remove(current_path + '/' + command[2])
 
         elif command[1] == 'cd':

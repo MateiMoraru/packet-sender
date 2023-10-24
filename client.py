@@ -1,4 +1,5 @@
 import socket, sys, encrypt, getpass
+import send_file as sf
 
 def send(msg):
     message = encrypt.encrypt(msg, KEY, False, '')
@@ -65,16 +66,34 @@ def help_prompt():
 
 
 def download_file(last_recv):
-    file = ""
+    raw_file = ""
 
     while last_recv != "DONE!":
-        file += last_recv
+        raw_file += last_recv
         last_recv = recv()
         
         if "DONE!" in last_recv:
             break
 
-    print(f"{COLORS[3][1]}{file}{COLORS[5][1]}")
+    print(f"{COLORS[3][1]}{raw_file}{COLORS[5][1]}")
+
+
+def send_file(file_name):
+    if isinstance(file_name, str):
+        data = sf.send_file(file_name, BUFFER_SIZE)
+
+        for chunk in data:
+            send(chunk)
+
+    else:
+        for file in file_name:
+            data = sf.send_file(file, BUFFER_SIZE)
+
+            for chunk in data:
+                send(chunk)
+
+    send("DONE!")
+
 
 
 def response(data):
@@ -112,7 +131,7 @@ login(1)
 if admin:
     print("Logged in successfully")
 
-while True:
+while True: #TODO: change command.split(' ')...
     print(f"\n{path}> ", end='')
     command = input()
     
@@ -123,9 +142,13 @@ while True:
     
     elif command.split(' ')[0] == 'help': 
         help_prompt()
+
+    elif command.split(' ')[0] == 'send_file': #TODO: Multiple Files..?
+        file_name = command.split(' ')[1]
+        send_file(file_name)
+        data = recv()
+
     
-    #elif command.split(' ')[0] == 'get_file':
-        
     else:
         send(str(ID) + ' ' + command)
 
