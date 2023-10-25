@@ -57,6 +57,8 @@ def help_prompt():
            'send+R4 <message> - Send a message to the console\n\t Use -s To Save It In The Server Log File',
            'ls+R4 - List The Directories/Files in the current location',
            'add-admin+R4 <username> <password> - Add A New Admin',
+           'send-file+R4 <file|files> - Sends The File To The Server'
+           'get-file+R4 <file|files> - Downlaods The Selected Files From The Server '
            '+R4+R2k+R4 - Kill The Program',
            '']
     print('_' * len(msg[6]))
@@ -65,26 +67,34 @@ def help_prompt():
         print(response('+B3' + msg[i] + '+R4'))
 
 
-def download_file(last_recv):
-    raw_file = ""
+def download_file(last_recv, file_name):
+    file_name = file_name.split(' ')[1:len(file_name) - 1]
+    current_file = 0
+    print(file_name)
+    file = ""
 
-    while last_recv != "DONE!":
-        raw_file += last_recv
+    while "DONE!" not in last_recv:
+        file += last_recv
         last_recv = recv()
+
+        if "DONE" in last_recv and not "DONE!" in last_recv:
+            fout = open(file_name[current_file], 'w')
+            fout.write(file)
+            fout.close()
+
+            file = ""
+            last_recv = ""
+            current_file += 1
         
-        if "DONE!" in last_recv:
-            break
+    print(f"{COLORS[3][1]}{file}{COLORS[5][1]}")
 
-    print(f"{COLORS[3][1]}{raw_file}{COLORS[5][1]}")
-
-
-def send_file(file_name):
+def send_file(file_name): #TODO: Multiple Files
     if isinstance(file_name, str):
         data = sf.send_file(file_name, BUFFER_SIZE)
-
+        
         for chunk in data:
+            print(chunk)
             send(chunk)
-
     else:
         for file in file_name:
             data = sf.send_file(file, BUFFER_SIZE)
@@ -93,7 +103,6 @@ def send_file(file_name):
                 send(chunk)
 
     send("DONE!")
-
 
 
 def response(data):
@@ -131,7 +140,7 @@ login(1)
 if admin:
     print("Logged in successfully")
 
-while True: #TODO: change command.split(' ')...
+while True:
     print(f"\n{path}> ", end='')
     command = input()
     
@@ -143,11 +152,12 @@ while True: #TODO: change command.split(' ')...
     elif command.split(' ')[0] == 'help': 
         help_prompt()
 
-    elif command.split(' ')[0] == 'send_file': #TODO: Multiple Files..?
+    elif command.split(' ')[0] == 'send_file':
+        send(str(ID) + ' ' + command)
         file_name = command.split(' ')[1]
+        print("FILE_NAME: ", file_name)
         send_file(file_name)
         data = recv()
-
     
     else:
         send(str(ID) + ' ' + command)
@@ -158,4 +168,4 @@ while True: #TODO: change command.split(' ')...
             path = data
 
         elif command.split(' ')[0] == 'get_file':
-            download_file(data)
+            download_file(data, command)

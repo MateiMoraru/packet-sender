@@ -6,7 +6,7 @@ def recv(conn):
     return encrypt.decrypt(message, KEY, False, '')
 
 
-def send(conn, msg): #TODO: Maybe '+R4' in just specific cases
+def send(conn, msg):
     message = encrypt.encrypt(msg + '+R4', KEY, False, '')
     conn.send(message.encode(ENCODING))
 
@@ -61,12 +61,13 @@ def get_file(conn, file_name, current_path): #TODO: Multiple Files
 
             for chunk in data:
                 send(conn, chunk)
-            
-            #send(conn, "DONE")
+
+            send(conn, "DONE")
         
-            log(f"> {USER[len(USER)-1]} Downloaded A File Saved As {file}")
+            log("> {USER[len(USER)-1]} Downloaded A File Saved As {file}")
     
     send(conn, "DONE!")
+
 
 def send_file(file_name, current_path, save): #TODO: Multiple Files
     print(isinstance(file_name, str))
@@ -93,6 +94,7 @@ def send_file(file_name, current_path, save): #TODO: Multiple Files
             fout.write(raw_file)
             fout.close()
 
+
 def process_commands(conn, command):
     try:
         global path
@@ -115,18 +117,16 @@ def process_commands(conn, command):
             get_file(conn, file_name, current_path)
 
         elif command[1] == 'send_file':
-            log("SA MOARA MA SA")
             save = False
-            file_name = command[2:len(command)]
-            print("PULA n PIZDA")
+            file_name = command[2]
+
+            if len(command) > 3 and not (len(command) == 4 and command[3] == '-s'):
+                file_name = command[2:len(command)]
+            
             if file_name[len(file_name) - 1] == '-s':
                 file_name = file_name.pop()
                 save = True
-
-            print("SEX")
-            if len(command) > 3:
-                pass
-            print("SALUT COAIE")
+            
             send_file(file_name, current_path, save)
 
         elif command[1] == 'mkdir':
@@ -143,8 +143,8 @@ def process_commands(conn, command):
             send(conn, f"Successfully Removed +R2{command[2]}-w")
 
         elif command[1] == 'rmfile':
-            #temp_path = curre
-            os.remove(current_path + '/' + command[2])
+            temp_path = current_path + '/' + command[2]
+            os.remove(temp_path)
 
         elif command[1] == 'cd':
             if len(command) == 2:
@@ -189,7 +189,7 @@ def process_commands(conn, command):
                 
                 write_to_file(msg, file_name)
                 log(f"> {USER[ID]} Wrote To File ({file_name})")
-                send(conn, f'+TABSuccessfully Wrote To File +B3"{file_name}"-w')
+                send(conn, f'+TABSuccessfully Wrote To File "+B3{file_name}"-w')
 
             else:
                 for text in tmsg:
@@ -245,6 +245,7 @@ with conn:
     while True:
         try:
             command = recv(conn).split(' ')
+            print(command[1] == "send_file", command[1])
             process_commands(conn, command)
 
         except KeyboardInterrupt:
