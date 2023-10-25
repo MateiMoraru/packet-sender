@@ -70,30 +70,31 @@ def get_file(conn, file_name, current_path): #TODO: Multiple Files
 
 
 def send_file(file_name, current_path, save): #TODO: Multiple Files
-    print(isinstance(file_name, str))
     if isinstance(file_name, str):
-        print(0)
         raw_file = ""
         data = recv(conn)
-        print(1)
         
-        try:
-            while data != "DONE!":
-                print("!!!SEX: " + data)
-                raw_file += data
+        print(data)
+
+        while "DONE!" not in data:
+            raw_file += data
                 
-                data = recv(conn)
+            data = recv(conn)
+            
+            print(raw_file)
 
-                if "DONE!" in data:
-                    break
-        except:
-            print("eroare")
-
+            if "DONE!" in data:
+                break
+        
         if save:
             fout = open(current_path + '/' + file_name, 'w')
             fout.write(raw_file)
+            
+            log(f"Saved File At: {current_path + '/' + file_name}")
+
             fout.close()
 
+        print("DONE")
 
 def process_commands(conn, command):
     try:
@@ -101,14 +102,14 @@ def process_commands(conn, command):
         ID = int(command[0])
         current_path = PATH + user_paths[ID]
         
-        if command[1] == 'add_admin':
+        if command[1] == 'add-admin':
             fout = open("login", 'a')
             fout.write(command[2]+'|||'+command[3] + '\n')
             log(f">{USER[ID]} Added A New Admin ({command[1]})")
             fout.close()
             send(conn, "Successfully Added Admin\n-w")
 
-        elif command[1] == 'get_file':
+        elif command[1] == 'get-file':
             file_name = command[2]
             
             if len(command) > 3:
@@ -116,7 +117,7 @@ def process_commands(conn, command):
                
             get_file(conn, file_name, current_path)
 
-        elif command[1] == 'send_file':
+        elif command[1] == 'send-file':
             save = False
             file_name = command[2]
 
@@ -127,7 +128,9 @@ def process_commands(conn, command):
                 file_name = file_name.pop()
                 save = True
             
-            send_file(file_name, current_path, save)
+            send_file(file_name, current_path, True)
+            send(conn, "Finished Sending File/s")
+            log("Finished Sending File/s")
 
         elif command[1] == 'mkdir':
             temp_path = current_path + command[2]
@@ -245,7 +248,6 @@ with conn:
     while True:
         try:
             command = recv(conn).split(' ')
-            print(command[1] == "send_file", command[1])
             process_commands(conn, command)
 
         except KeyboardInterrupt:

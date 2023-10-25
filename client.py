@@ -7,7 +7,6 @@ def send(msg):
 
 
 def recv():
-
     recieved = s.recv(BUFFER_SIZE).decode(ENCODING)
     message = encrypt.decrypt(recieved, KEY, False, '')
     
@@ -35,8 +34,6 @@ def login(count):
         return
 
     elif count <= 3 :
-        #print(response)
-        #response[1] != "Logged"
         print("Wrong Credentials")
         login(count + 1)
     
@@ -59,7 +56,7 @@ def help_prompt():
            'add-admin+R4 <username> <password> - Add A New Admin',
            'send-file+R4 <file|files> - Sends The File To The Server'
            'get-file+R4 <file|files> - Downlaods The Selected Files From The Server '
-           '+R4+R2k+R4 - Kill The Program',
+           '+R4+R2kill+R4 - Kill The Program',
            '']
     print('_' * len(msg[6]))
 
@@ -70,7 +67,6 @@ def help_prompt():
 def download_file(last_recv, file_name):
     file_name = file_name.split(' ')[1:len(file_name) - 1]
     current_file = 0
-    print(file_name)
     file = ""
 
     while "DONE!" not in last_recv:
@@ -78,7 +74,11 @@ def download_file(last_recv, file_name):
         last_recv = recv()
 
         if "DONE" in last_recv and not "DONE!" in last_recv:
-            fout = open(file_name[current_file], 'w')
+            try:
+                fout = open(file_name[current_file], 'w')
+            except:
+                print(f"{file_name} Doesn't Exist")
+
             fout.write(file)
             fout.close()
 
@@ -88,19 +88,27 @@ def download_file(last_recv, file_name):
         
     print(f"{COLORS[3][1]}{file}{COLORS[5][1]}")
 
+
 def send_file(file_name): #TODO: Multiple Files
     if isinstance(file_name, str):
-        data = sf.send_file(file_name, BUFFER_SIZE)
+        try:
+            data = sf.send_file(file_name, BUFFER_SIZE)
+        except:
+            print(f"{file_name} Doesn't Exist")
         
         for chunk in data:
-            print(chunk)
             send(chunk)
+
     else:
         for file in file_name:
-            data = sf.send_file(file, BUFFER_SIZE)
-
+            try:
+                data = sf.send_file(file, BUFFER_SIZE)
+            except:
+                print(f"{file} Doesn't Exist")
+            
             for chunk in data:
                 send(chunk)
+            send("DONE")
 
     send("DONE!")
 
@@ -152,10 +160,9 @@ while True:
     elif command.split(' ')[0] == 'help': 
         help_prompt()
 
-    elif command.split(' ')[0] == 'send_file':
+    elif command.split(' ')[0] == 'send-file':
         send(str(ID) + ' ' + command)
         file_name = command.split(' ')[1]
-        print("FILE_NAME: ", file_name)
         send_file(file_name)
         data = recv()
     
@@ -167,5 +174,5 @@ while True:
         if command.split(' ')[0] == "cd":
             path = data
 
-        elif command.split(' ')[0] == 'get_file':
+        elif command.split(' ')[0] == 'get-file':
             download_file(data, command)
